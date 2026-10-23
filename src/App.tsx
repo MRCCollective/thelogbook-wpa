@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   ArrowRight, CalendarDays, Camera, Check, ChevronLeft, ChevronRight, Clock3,
-  LayoutGrid, List, LogOut, Moon, Plus, Settings, Sun, UserRound, Users, ContactRound,
+  LayoutGrid, List, LogOut, Moon, Plus, Settings, Sun, Users, ContactRound,
 } from 'lucide-react'
 import { demoRepository, getConsentEnabled, getDemoSession, getMembers, saveMembers, setConsentEnabled, signInToDemo, signOutOfDemo } from './data/demo'
 import ActivityWizard from './ActivityWizard'
@@ -58,7 +58,7 @@ function Brand() {
 }
 
 function AccountMenu({ variant, name, email, onSettings, onLogout }: {
-  variant: 'top' | 'sidebar' | 'mobile'
+  variant: 'top' | 'sidebar'
   name: string
   email: string
   onSettings: () => void
@@ -90,9 +90,7 @@ function AccountMenu({ variant, name, email, onSettings, onLogout }: {
   return <div className={`account-menu account-menu-${variant}`} ref={menuRef}>
     {variant === 'sidebar'
       ? <button ref={triggerRef} className="account-button" type="button" aria-label="Öppna kontomeny" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen(value => !value)}><span className="avatar">{name.charAt(0)}</span><span><strong>{name}</strong><small>{email}</small></span><Settings size={18} aria-hidden="true" /></button>
-      : variant === 'top'
-        ? <button ref={triggerRef} className="avatar top-avatar" type="button" aria-label="Öppna kontomeny" title="Konto" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen(value => !value)}>{name.charAt(0)}</button>
-        : <button ref={triggerRef} type="button" aria-label="Konto" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen(value => !value)}><UserRound size={22} /><span>Konto</span></button>}
+      : <button ref={triggerRef} className="avatar top-avatar" type="button" aria-label="Öppna kontomeny" title="Konto" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen(value => !value)}>{name.charAt(0)}</button>}
     {open && <div className="account-menu-panel">
       <div className="account-menu-identity"><strong>{name}</strong><small>{email}</small></div>
       <button type="button" onClick={() => { setOpen(false); onSettings() }}><Settings size={17} /> Inställningar</button>
@@ -316,7 +314,7 @@ function App() {
         {view === 'settings' && <div className="settings-page"><div className="page-heading"><div><h1>Inställningar</h1><p>Anpassa hur The Logbook visas för dig.</p></div></div><section className="settings-card" aria-labelledby="appearance-heading"><div><h2 id="appearance-heading">Utseende</h2><p>Välj det läge du trivs bäst med. Valet sparas i den här webbläsaren.</p></div><div className="theme-options" role="group" aria-label="Färgläge"><button type="button" className={theme === 'light' ? 'selected' : ''} aria-pressed={theme === 'light'} onClick={() => setTheme('light')}><Sun size={20} /><span>Ljust läge</span>{theme === 'light' && <Check size={17} className="theme-check" />}</button><button type="button" className={theme === 'dark' ? 'selected' : ''} aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}><Moon size={20} /><span>Mörkt läge</span>{theme === 'dark' && <Check size={17} className="theme-check" />}</button></div></section><section className="settings-card consent-setting"><div><h2>Samtyckeslistan</h2><p>Simulera om funktionen är aktiverad för verksamheten. När den är avstängd döljs länken och utflyktsvalet.</p></div><label className="setting-toggle"><input type="checkbox" checked={consentEnabled} onChange={event => changeConsentEnabled(event.target.checked)} /> Aktivera i demon</label></section></div>}
       </main>
     </div>
-    <nav className={`mobile-nav ${consentEnabled ? 'with-members' : ''}`} aria-label="Mobil meny"><button aria-label="Översikt" className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}><LayoutGrid size={22} /><span>Översikt</span></button><button aria-label="Aktiviteter" className={view === 'activities' ? 'active' : ''} onClick={() => setView('activities')}><List size={22} /><span>Aktiviteter</span></button><button className="mobile-add" aria-label="Ny aktivitet" onClick={() => setComposerOpen(true)}><Plus size={26} /></button><button aria-label="Skanna incheckningskort" onClick={() => setScannerOpen(true)}><Camera size={22} /><span>Skanna</span></button><button aria-label="Kalender" className={view === 'calendar' ? 'active' : ''} onClick={() => setView('calendar')}><CalendarDays size={22} /><span>Kalender</span></button>{consentEnabled && <button aria-label="Samtyckeslistan" className={view === 'members' ? 'active' : ''} onClick={() => setView('members')}><ContactRound size={22} /><span>Medlemmar</span></button>}<AccountMenu variant="mobile" name={`${session.name} Lind`} email={session.email} onSettings={() => setView('settings')} onLogout={logout} /></nav>
+    <nav className={`mobile-nav ${consentEnabled ? 'with-members' : ''}`} aria-label="Mobil meny"><button aria-label="Översikt" className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}><LayoutGrid size={22} /><span>Översikt</span></button><button aria-label="Aktiviteter" className={view === 'activities' ? 'active' : ''} onClick={() => setView('activities')}><List size={22} /><span>Aktiviteter</span></button><button className="mobile-add" aria-label="Ny aktivitet" onClick={() => setComposerOpen(true)}><Plus size={26} /></button><button aria-label="Skanna incheckningskort" onClick={() => setScannerOpen(true)}><Camera size={22} /><span>Skanna</span></button><button aria-label="Kalender" className={view === 'calendar' ? 'active' : ''} onClick={() => setView('calendar')}><CalendarDays size={22} /><span>Kalender</span></button>{consentEnabled && <button aria-label="Samtyckeslistan" className={view === 'members' ? 'active' : ''} onClick={() => setView('members')}><ContactRound size={22} /><span>Medlemmar</span></button>}</nav>
     {composerOpen && <ActivityWizard operations={operations} members={members} consentEnabled={consentEnabled} onClose={() => setComposerOpen(false)} onSave={saveActivity} />}
     {scannerOpen && <CheckInScanner activities={activities} operations={operations} members={members} onClose={() => setScannerOpen(false)} />}
     {notice && <div className="toast" role="status"><Check size={18} />{notice}</div>}
