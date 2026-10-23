@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
-import { ArrowLeft, CalendarDays, Clock3, MapPin, Users, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, CalendarDays, Clock3, MapPin, Share2, Users, X } from 'lucide-react'
+import ActivityPhotos from './ActivityPhotos'
 import type { Activity, Operation, ParticipantCounts } from './data/types'
 
 const dateFormat = new Intl.DateTimeFormat('sv-SE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -8,10 +9,27 @@ const names = (values: string[]) => values.length ? values.join(', ') : 'Inga an
 
 export default function ActivityDetails({ activity, operation, onClose }: { activity: Activity, operation?: Operation, onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null)
+  const [shareMessage, setShareMessage] = useState('')
   const details = activity.details
   const title = activity.title || operation?.name || 'Aktivitet'
   const date = dateFormat.format(new Date(`${activity.date}T12:00:00`))
   const participantCount = count(activity.participants) + (details?.people.length ?? 0)
+
+  async function shareActivity() {
+    const text = `${title}\n${operation?.name ?? 'Verksamhet'} · ${date} · ${activity.startTime}–${activity.endTime}`
+    setShareMessage('')
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text })
+      } else {
+        await navigator.clipboard.writeText(text)
+        setShareMessage('Aktivitetstexten kopierades. Klistra in den där du vill dela den.')
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      setShareMessage('Det gick inte att dela. Försök igen.')
+    }
+  }
 
   useEffect(() => {
     closeRef.current?.focus()
@@ -35,6 +53,7 @@ export default function ActivityDetails({ activity, operation, onClose }: { acti
           <div><Clock3 size={20} /><span><small>Tid</small><strong>{activity.startTime}–{activity.endTime}</strong></span></div>
           <div><Users size={20} /><span><small>Deltagare</small><strong>{participantCount}</strong></span></div>
         </div>
+        <section className="detail-section activity-share"><h3>Dela aktivitet</h3><p>Dela titel, verksamhet och tid. Deltagare, anteckningar och bilder följer inte med.</p><button className="button button-primary" type="button" onClick={() => void shareActivity()}><Share2 size={18} /> Dela i sociala medier</button>{shareMessage && <p className="activity-share-message" role="status">{shareMessage}</p>}</section>
         <section className="detail-section"><h3>Deltagare</h3>
           <div className="detail-counts"><div><strong>{activity.participants.women}</strong><span>Kvinnor</span></div><div><strong>{activity.participants.men}</strong><span>Män</span></div><div><strong>{activity.participants.other}</strong><span>Övriga</span></div></div>
           {details?.people.length ? <div className="detail-people"><h4>Registrerade deltagare och volontärer</h4>{details.people.map(person => <div key={person.id}><strong>{person.name}</strong><span>{[person.volunteer && 'Volontär', person.assisting && 'Assisterande', person.producing && 'Producerande'].filter(Boolean).join(' · ')}</span></div>)}</div> : null}
@@ -47,6 +66,7 @@ export default function ActivityDetails({ activity, operation, onClose }: { acti
           {details.excursionDetails && <section className="detail-section"><h3>Utflykt</h3>{details.excursionDetails.planning && <p>{details.excursionDetails.planning}</p>}{details.excursionDetails.riskAssessmentParticipants && <div className="detail-info"><span>Riskbedömning, deltagare</span><strong>{details.excursionDetails.riskAssessmentParticipants}</strong></div>}{details.excursionDetails.riskAssessmentResponsible && <div className="detail-info"><span>Ansvarig chef</span><strong>{details.excursionDetails.riskAssessmentResponsible}</strong></div>}{details.excursionDetails.risks.map((risk, index) => <div className="detail-risk" key={index}><strong>{risk.risk}</strong><span>Sannolikhet {risk.probability} · Konsekvens {risk.consequence}</span>{risk.action && <p>{risk.action}</p>}{risk.responsible && <small>Ansvarig: {risk.responsible}</small>}</div>)}{details.excursionDetails.staff.map((person, index) => <div className="detail-stat-row" key={index}><span>{person.name}</span><strong>{person.responsibility}</strong></div>)}</section>}
           {details.notes && <section className="detail-section"><h3>{details.excursion ? 'Utvärdering' : 'Anteckningar'}</h3><p className="detail-notes">{details.notes}</p></section>}
         </>}
+        <ActivityPhotos activityId={activity.id} />
       </div>
     </section>
   </div>
