@@ -132,7 +132,6 @@ function Login({ onLogin }: { onLogin: (session: Session) => void }) {
           <div className="illustration-line"><span>14:00</span><b>Öppen verksamhet</b><i /></div>
           <div className="illustration-line"><span>19:00</span><b>Kvällspromenad</b><i /></div>
         </div>
-        <p className="login-story-footer">Ett nytt sätt att arbeta i The Logbook.</p>
       </div>
       <div className="login-panel">
         <div className="login-card">
