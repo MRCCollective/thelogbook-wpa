@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: The Logbook PWA client contract (proposal)
+  version: 0.1.0-draft
+  description: >-
+    Discussion draft for a future KEKS-backed PWA. These endpoints are not
+    implemented by KEKS.Web today. Business rules and permissions remain in .NET.
+servers:
+  - url: /pwa/v1
+paths:
+  /session:
+    get:
+      summary: Get the signed-in user and selected organization
+      operationId: getSession
+      security:
+        - browserSession: []
+        - nativeBearer: []
+      responses:
+        '200':
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /operations:
+    get:
+      summary: List existing operations available for activity creation
+      operationId: listOperations
+      security:
+        - browserSession: []
+        - nativeBearer: []
+      responses:
+        '200':
+          description: Available operations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Operation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /activities:
+    get:
+      summary: List activities visible to the signed-in user
+      operationId: listActivities
+      security:
+        - browserSession: []
+        - nativeBearer: []
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      summary: Create an activity in an existing operation
+      operationId: createActivity
+      description: >-
+        The backend validates permissions and applies KEKS activity rules.
+        The exact required fields must be agreed before implementation.
+      security:
+        - browserSession: []
+        - nativeBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewActivity'
+      responses:
+        '201':
+          description: Activity created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+        '400':
+          description: Invalid activity
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: User cannot create activities in this operation
+components:
+  securitySchemes:
+    browserSession:
+      type: apiKey
+      in: cookie
+      name: .AspNetCore.Identity.Application
+      description: Illustrative browser session; exact cookie and CSRF design are undecided.
+    nativeBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Future native user token; authorization flow is undecided.
+  responses:
+    Unauthorized:
+      description: Sign-in required
+  schemas:
+    Session:
+      type: object
+      required: [userId, displayName, organizationId, organizationName]
+      properties:
+        userId: { type: string }
+        displayName: { type: string }
+        organizationId: { type: string, format: uuid }
+        organizationName: { type: string }
+    Operation:
+      type: object
+      required: [id, name, kind]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        kind:
+          type: string
+          enum: [group, dropIn, closedGroup, outreach]
+    ParticipantCounts:
+      type: object
+      required: [women, men, other]
+      properties:
+        women: { type: integer, minimum: 0 }
+        men: { type: integer, minimum: 0 }
+        other: { type: integer, minimum: 0 }
+    NewActivity:
+      type: object
+      required: [title, operationId, date, startTime, endTime, participants]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 100 }
+        operationId: { type: string, format: uuid }
+        date: { type: string, format: date }
+        startTime: { type: string, pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$' }
+        endTime: { type: string, pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$' }
+        participants:
+          $ref: '#/components/schemas/ParticipantCounts'
+    Activity:
+      allOf:
+        - $ref: '#/components/schemas/NewActivity'
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string, format: uuid }
