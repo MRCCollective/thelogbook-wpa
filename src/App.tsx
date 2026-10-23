@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { demoRepository, getConsentEnabled, getDemoSession, getMembers, saveMembers, setConsentEnabled, signInToDemo, signOutOfDemo } from './data/demo'
 import ActivityWizard from './ActivityWizard'
+import ActivityDetails from './ActivityDetails'
 import CheckInScanner from './CheckInScanner'
 import ConsentList from './ConsentList'
 import type { Activity, Member, NewActivity, Operation, Session } from './data/types'
@@ -153,7 +154,7 @@ function Login({ onLogin }: { onLogin: (session: Session) => void }) {
   </main>
 }
 
-function ActivityList({ activities, operations, emptyText }: { activities: Activity[], operations: Operation[], emptyText: string }) {
+function ActivityList({ activities, operations, emptyText, onSelect }: { activities: Activity[], operations: Operation[], emptyText: string, onSelect: (activity: Activity) => void }) {
   if (!activities.length) return <div className="empty-state"><CalendarDays size={30} /><h3>Inga aktiviteter här än</h3><p>{emptyText}</p></div>
 
   let previousDate = ''
@@ -165,31 +166,19 @@ function ActivityList({ activities, operations, emptyText }: { activities: Activ
       const date = fromISO(activity.date)
       return <div key={activity.id}>
         {showDate && <h3 className="activity-date-heading">{fullDateFormatter.format(date)}{activity.date === toISO(new Date()) && <span>Idag</span>}</h3>}
-        <article className="activity-row">
+        <button className="activity-row" type="button" onClick={() => onSelect(activity)} aria-label={`Visa ${activity.title || operation?.name || 'aktivitet'} den ${fullDateFormatter.format(date)}`}>
           <div className="activity-time">{activity.startTime}<span>{activity.endTime}</span></div>
           <div className={`activity-symbol ${operation?.kind ?? 'group'}`} aria-hidden="true"><span /></div>
           <div className="activity-copy"><h4>{activity.title || operation?.name || 'Aktivitet'}</h4><p>{activity.title ? operation?.name ?? 'Verksamhet' : 'Utan eget namn'}</p></div>
           <div className="activity-count" title="Antal deltagare"><Users size={16} /><span>{totalParticipants(activity) || '—'}</span></div>
-        </article>
-        {activity.details && <details className="stored-activity"><summary>Visa registrerade uppgifter</summary><div className="stored-activity-content">
-          <p><strong>Tid:</strong> {activity.date}{activity.details.endDate !== activity.date ? ` – ${activity.details.endDate}` : ''}, {activity.startTime}–{activity.endTime}{activity.details.planned ? ' · Planerad aktivitet' : ''}{activity.details.excursion ? ' · Utflykt' : ''}</p>
-          <p><strong>Anonyma deltagare:</strong> {activity.participants.women} kvinnor, {activity.participants.men} män, {activity.participants.other} övriga.</p>
-          {activity.details.people.length > 0 && <p><strong>Alias och volontärer:</strong> {activity.details.people.map(person => `${person.name}${person.volunteer ? ' (volontär)' : ''}${person.assisting ? ' · assisterande' : ''}${person.producing ? ' · producerande' : ''}`).join(', ')}</p>}
-          {(activity.details.assisting.women + activity.details.assisting.men + activity.details.assisting.other > 0 || activity.details.producing.women + activity.details.producing.men + activity.details.producing.other > 0) && <p><strong>Anonym delaktighet:</strong> {activity.details.assisting.women + activity.details.assisting.men + activity.details.assisting.other} assisterande, {activity.details.producing.women + activity.details.producing.men + activity.details.producing.other} producerande.</p>}
-          {activity.details.staff.length > 0 && <p><strong>Personal:</strong> {activity.details.staff.join(', ')}</p>}
-          {activity.details.activityTypes.length > 0 && <p><strong>Aktivitetstyper:</strong> {activity.details.activityTypes.join(', ')}</p>}
-          {activity.details.tags.length > 0 && <p><strong>Taggar:</strong> {activity.details.tags.join(', ')}</p>}
-          {activity.details.planning !== 'none' && <p><strong>Planering av unga:</strong> {activity.details.planning === 'advance' ? 'I förväg' : 'Samma dag'} · {Object.entries(activity.details.responsibilities).filter(([, value]) => value).map(([key]) => key).join(', ')}{activity.details.producedHours > 0 ? ` · ${activity.details.producedHours} producerade timmar` : ''}</p>}
-          {activity.details.producedActivity && <p><strong>Producerad aktivitet:</strong> {activity.details.producedActivity}</p>}
-          {activity.details.notes && <p><strong>Anteckningar:</strong> {activity.details.notes}</p>}
-          {activity.details.excursionDetails && <p><strong>Utflykt:</strong> {activity.details.excursionDetails.risks.length} risker, {activity.details.excursionDetails.staff.length} ansvarsposter. {activity.details.excursionDetails.planning}</p>}
-        </div></details>}
+          <ChevronRight className="activity-chevron" size={18} aria-hidden="true" />
+        </button>
       </div>
     })}
   </div>
 }
 
-function CalendarView({ activities, operations, onAdd }: { activities: Activity[], operations: Operation[], onAdd: () => void }) {
+function CalendarView({ activities, operations, onAdd, onSelect }: { activities: Activity[], operations: Operation[], onAdd: () => void, onSelect: (activity: Activity) => void }) {
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const [selected, setSelected] = useState(toISO(new Date()))
   const first = mondayOf(month)
@@ -214,7 +203,7 @@ function CalendarView({ activities, operations, onAdd }: { activities: Activity[
         const count = byDate.get(iso)?.length ?? 0
         return <button key={iso} className={`month-day ${day.getMonth() !== month.getMonth() ? 'outside' : ''} ${iso === selected ? 'selected' : ''} ${iso === toISO(new Date()) ? 'today' : ''}`} onClick={() => setSelected(iso)} aria-label={`${fullDateFormatter.format(day)}, ${count} aktiviteter`} aria-pressed={iso === selected}><span>{day.getDate()}</span>{count > 0 && <i className="day-dot" />}</button>
       })}
-    </div></section><section className="calendar-detail"><div className="section-heading"><div><h2>{fullDateFormatter.format(fromISO(selected))}</h2><p>{selectedActivities.length} {selectedActivities.length === 1 ? 'aktivitet' : 'aktiviteter'}</p></div></div><ActivityList activities={selectedActivities} operations={operations} emptyText="Välj en annan dag eller lägg till en aktivitet." /></section></div>
+    </div></section><section className="calendar-detail"><div className="section-heading"><div><h2>{fullDateFormatter.format(fromISO(selected))}</h2><p>{selectedActivities.length} {selectedActivities.length === 1 ? 'aktivitet' : 'aktiviteter'}</p></div></div><ActivityList activities={selectedActivities} operations={operations} emptyText="Välj en annan dag eller lägg till en aktivitet." onSelect={onSelect} /></section></div>
   </div>
 }
 
@@ -231,6 +220,8 @@ function App() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [composerOpen, setComposerOpen] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
+  const activityTrigger = useRef<HTMLElement | null>(null)
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
@@ -275,6 +266,16 @@ function App() {
     setComposerOpen(false)
     setView('activities')
     setNotice('Aktiviteten är sparad i demon.')
+  }
+
+  function showActivity(activity: Activity) {
+    activityTrigger.current = document.activeElement as HTMLElement
+    setSelectedActivity(activity)
+  }
+
+  function closeActivity() {
+    setSelectedActivity(null)
+    window.requestAnimationFrame(() => activityTrigger.current?.focus())
   }
 
   function logout() {
@@ -324,15 +325,16 @@ function App() {
           <div className="home-layout"><div className="home-primary"><div className="week-header"><div><h2>Din vecka</h2><p>{dateFormatter.format(weekStart)} – {dateFormatter.format(addDays(weekStart, 6))}</p></div><div className="calendar-controls"><button className="icon-button" aria-label="Föregående vecka" onClick={() => { setWeekOffset(value => value - 1); setSelectedDay(null) }}><ChevronLeft size={21} /></button><button className="icon-button" aria-label="Nästa vecka" onClick={() => { setWeekOffset(value => value + 1); setSelectedDay(null) }}><ChevronRight size={21} /></button></div></div>
             <div className="week-strip"><button className={`week-all ${selectedDay === null ? 'selected' : ''}`} onClick={() => setSelectedDay(null)} aria-pressed={selectedDay === null}>Alla</button>{week.map(day => { const iso = toISO(day); const count = weekActivities.filter(activity => activity.date === iso).length; return <button key={iso} className={`week-day ${selectedDay === iso ? 'selected' : ''} ${iso === toISO(today) ? 'today' : ''}`} onClick={() => setSelectedDay(iso)} aria-pressed={selectedDay === iso}><span>{weekdayFormatter.format(day).replace('.', '')}</span><strong>{day.getDate()}</strong><i className={count ? 'has-events' : ''} /></button> })}</div>
             <div className="section-heading"><div><h2>{selectedDay ? fullDateFormatter.format(fromISO(selectedDay)) : 'Veckans aktiviteter'}</h2><p>{visibleWeekActivities.length} {visibleWeekActivities.length === 1 ? 'aktivitet' : 'aktiviteter'}</p></div><button className="text-link" onClick={() => setView('activities')}>Visa alla <ArrowRight size={17} /></button></div>
-            <ActivityList activities={visibleWeekActivities} operations={operations} emptyText="Välj en annan dag eller lägg till en aktivitet." />
+            <ActivityList activities={visibleWeekActivities} operations={operations} emptyText="Välj en annan dag eller lägg till en aktivitet." onSelect={showActivity} />
           </div><aside className="home-aside"><div className="summary-card"><div className="summary-top"><span className="summary-icon"><CalendarDays size={21} /></span><span>Vald vecka</span></div><strong>{weekActivities.length}</strong><p>aktiviteter</p><div className="summary-divider" /><div className="summary-bottom"><Users size={18} /><span>{weekPeople} deltagare totalt</span></div></div><div className="next-card"><h3>Nästa aktivitet</h3>{upcoming ? <><div className="next-date">{fullDateFormatter.format(fromISO(upcoming.date))}</div><h4>{upcoming.title || operations.find(item => item.id === upcoming.operationId)?.name || 'Aktivitet'}</h4><p>{upcoming.title ? operations.find(item => item.id === upcoming.operationId)?.name : 'Utan eget namn'}</p><div className="next-time"><Clock3 size={17} /> {upcoming.startTime}–{upcoming.endTime}</div></> : <p>Inget planerat just nu.</p>}<button className="text-link" onClick={() => setView('calendar')}>Öppna kalender <ArrowRight size={17} /></button></div></aside></div></div>}
-        {view === 'activities' && <div className="activities-page"><div className="page-heading"><div><h1>Aktiviteter</h1><p>Allt som händer i din verksamhet, samlat på ett ställe.</p></div><button className="button button-primary desktop-add" onClick={() => setComposerOpen(true)}><Plus size={19} /> Ny aktivitet</button></div><div className="activities-panel"><div className="section-heading"><div><h2>Alla aktiviteter</h2><p>{activities.length} registrerade aktiviteter</p></div></div><ActivityList activities={activities} operations={operations} emptyText="Lägg till din första aktivitet." /></div></div>}
-        {view === 'calendar' && <CalendarView activities={activities} operations={operations} onAdd={() => setComposerOpen(true)} />}
+        {view === 'activities' && <div className="activities-page"><div className="page-heading"><div><h1>Aktiviteter</h1><p>Allt som händer i din verksamhet, samlat på ett ställe.</p></div><button className="button button-primary desktop-add" onClick={() => setComposerOpen(true)}><Plus size={19} /> Ny aktivitet</button></div><div className="activities-panel"><div className="section-heading"><div><h2>Alla aktiviteter</h2><p>{activities.length} registrerade aktiviteter</p></div></div><ActivityList activities={activities} operations={operations} emptyText="Lägg till din första aktivitet." onSelect={showActivity} /></div></div>}
+        {view === 'calendar' && <CalendarView activities={activities} operations={operations} onAdd={() => setComposerOpen(true)} onSelect={showActivity} />}
         {view === 'members' && consentEnabled && <ConsentList members={members} operations={operations} onSave={saveMember} />}
         {view === 'settings' && <div className="settings-page"><div className="page-heading"><div><h1>Inställningar</h1><p>Anpassa hur The Logbook visas för dig.</p></div></div><section className="settings-card appearance-card" aria-labelledby="appearance-heading"><div><h2 id="appearance-heading">Utseende</h2><p>Följ enhetens inställning eller välj ett fast färgläge. Valet sparas i den här webbläsaren.</p></div><div className="theme-options" role="group" aria-label="Färgläge"><button type="button" className={theme === 'system' ? 'selected' : ''} aria-pressed={theme === 'system'} onClick={() => setTheme('system')}><Monitor size={20} /><span>Följ enheten</span>{theme === 'system' && <Check size={17} className="theme-check" />}</button><button type="button" className={theme === 'light' ? 'selected' : ''} aria-pressed={theme === 'light'} onClick={() => setTheme('light')}><Sun size={20} /><span>Ljust läge</span>{theme === 'light' && <Check size={17} className="theme-check" />}</button><button type="button" className={theme === 'dark' ? 'selected' : ''} aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}><Moon size={20} /><span>Mörkt läge</span>{theme === 'dark' && <Check size={17} className="theme-check" />}</button></div></section><section className="settings-card consent-setting"><div><h2>Samtyckeslistan</h2><p>Simulera om funktionen är aktiverad för verksamheten. När den är avstängd döljs länken och utflyktsvalet.</p></div><label className="setting-toggle"><input type="checkbox" checked={consentEnabled} onChange={event => changeConsentEnabled(event.target.checked)} /> Aktivera i demon</label></section></div>}
       </main>
     </div>
     <nav className="mobile-nav" aria-label="Mobil meny"><button aria-label="Översikt" className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}><LayoutGrid size={22} /><span>Översikt</span></button><button aria-label="Aktiviteter" className={view === 'activities' ? 'active' : ''} onClick={() => setView('activities')}><List size={22} /><span>Aktiviteter</span></button><button className="mobile-add" aria-label="Ny aktivitet" onClick={() => setComposerOpen(true)}><Plus size={26} /></button><button aria-label="Kalender" className={view === 'calendar' ? 'active' : ''} onClick={() => setView('calendar')}><CalendarDays size={22} /><span>Kalender</span></button>{consentEnabled && <button aria-label="Samtyckeslistan" className={view === 'members' ? 'active' : ''} onClick={() => setView('members')}><ContactRound size={22} /><span>Medlemmar</span></button>}</nav>
+    {selectedActivity && <ActivityDetails activity={selectedActivity} operation={operations.find(item => item.id === selectedActivity.operationId)} onClose={closeActivity} />}
     {composerOpen && <ActivityWizard operations={operations} members={members} consentEnabled={consentEnabled} onClose={() => setComposerOpen(false)} onSave={saveActivity} />}
     {scannerOpen && <CheckInScanner activities={activities} operations={operations} members={members} onClose={() => setScannerOpen(false)} />}
     {notice && <div className="toast" role="status"><Check size={18} />{notice}</div>}
