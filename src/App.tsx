@@ -18,9 +18,9 @@ const themeKey = 'thelogbook-theme'
 function savedTheme(): Theme {
   try {
     const saved = localStorage.getItem(themeKey)
-    return saved === 'light' || saved === 'dark' ? saved : 'system'
+    return saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'light'
   } catch {
-    return 'system'
+    return 'light'
   }
 }
 

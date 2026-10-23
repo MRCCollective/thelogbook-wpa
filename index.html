@@ -1,9 +1,18 @@
 <!doctype html>
-<html lang="sv">
+<html lang="sv" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#151b1e" />
+    <meta name="theme-color" content="#f4f6f2" />
+    <script>
+      try {
+        const choice = localStorage.getItem('thelogbook-theme')
+        if (choice === 'dark' || (choice === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.dataset.theme = 'dark'
+          document.querySelector('meta[name="theme-color"]').content = '#151b1e'
+        }
+      } catch { /* The light default still works without local storage. */ }
+    </script>
     <meta name="description" content="The Logbook – aktiviteter och kalender i ett enklare format." />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <title>The Logbook</title>
